@@ -1,0 +1,169 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AWS QR Code Generator</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #f1f5f9;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 430px;
+      background: white;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 8px 30px #00000012;
+      text-align: center;
+    }
+
+    h1 {
+      color: #172554;
+      font-size: 25px;
+    }
+
+    p {
+      color: #64748b;
+    }
+
+    input {
+      width: 100%;
+      padding: 13px;
+      margin: 14px 0;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 15px;
+    }
+
+    button {
+      width: 100%;
+      padding: 13px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
+    #result {
+      margin-top: 24px;
+      overflow-wrap: anywhere;
+    }
+
+    #qrImage {
+      width: 250px;
+      max-width: 100%;
+      margin: 12px auto;
+      display: block;
+    }
+
+    a {
+      color: #2563eb;
+    }
+
+    #message {
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="container">
+    <h1>QR Code Generator</h1>
+    <p>Generate a QR code and store it in Amazon S3.</p>
+
+    <form id="qrForm">
+      <input
+        type="url"
+        id="urlInput"
+        placeholder="https://example.com"
+        required
+      />
+
+      <button type="submit" id="generateBtn">
+        Generate QR Code
+      </button>
+    </form>
+
+    <p id="message" role="status"></p>
+
+    <div id="result" hidden>
+      <img id="qrImage" alt="Generated QR code" />
+      <p>Your QR code is ready!</p>
+      <a id="downloadLink" download="qr-code.png">
+        Download QR Code
+      </a>
+    </div>
+  </main>
+
+  <script>
+    const form = document.getElementById("qrForm");
+    const input = document.getElementById("urlInput");
+    const button = document.getElementById("generateBtn");
+    const message = document.getElementById("message");
+    const result = document.getElementById("result");
+    const qrImage = document.getElementById("qrImage");
+    const downloadLink = document.getElementById("downloadLink");
+
+    // Local testing: use the Node.js server.
+    // AWS deployment: replace this with your API Gateway URL + route.
+    // const API_URL = "https://x0t96xhzm5.execute-api.us-east-1.amazonaws.com/generate-qr";
+    const API_URL = "/generate-qr";
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      result.hidden = true;
+      button.disabled = true;
+      message.textContent = "Generating QR code...";
+
+      try {
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            url: input.value.trim()
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "Request failed");
+        }
+
+        qrImage.src = data.imageUrl;
+        downloadLink.href = data.imageUrl;
+        result.hidden = false;
+        message.textContent = data.message;
+      } catch (error) {
+        message.textContent = error.message;
+      } finally {
+        button.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
